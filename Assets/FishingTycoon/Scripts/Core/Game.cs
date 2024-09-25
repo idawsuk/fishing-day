@@ -20,6 +20,7 @@ namespace FishPlanner
         public Bait[] Baits => baits;
         public FishForecast Forecast => forecast;
         public Player Player => player;
+        public int Day => day;
 
         public Game()
         {
@@ -55,9 +56,10 @@ namespace FishPlanner
         {
             day++;
             forecast.GenerateForecast();
+            player.ClearBait();
         }
 
-        public List<Fish> StartFishing()
+        public FishingResults StartFishing()
         {
             fishCatched = new List<Fish>();
             FishingPole fishingPole = player.FishingPole;
@@ -74,6 +76,7 @@ namespace FishPlanner
                 }
             }
 
+            int goldEarned = 0;
             foreach(var baitDictionary in player.Baits)
             {
                 List<Bait> baits = baitDictionary.Value;
@@ -83,13 +86,24 @@ namespace FishPlanner
                     if(fishColor.TryGetValue(bait.Color, out var fishes)) {
                         if(fishes.Count > 0)
                         {
-                            fishCatched.Add(fishes.Dequeue());
+                            Fish fish = fishes.Dequeue();
+                            goldEarned += fish.Reward;
+                            fishCatched.Add(fish);
                         }
                     }
                 }
             }
 
-            return fishCatched;
+            player.EarnGold(goldEarned);
+            player.FishingPole = null;
+
+            FishingResults result = new FishingResults();
+            result.Fish = fishCatched;
+            result.GoldEarned = goldEarned;
+            result.TotalGold = player.Gold;
+            result.Survived = player.Gold > 100;
+
+            return result;
         }
 
         public bool BuyFishingPole(Size size)
@@ -164,6 +178,14 @@ namespace FishPlanner
             }
 
             return null;
+        }
+
+        public class FishingResults
+        {
+            public List<Fish> Fish;
+            public int GoldEarned;
+            public int TotalGold;
+            public bool Survived;
         }
 
         public class FishForecast
@@ -261,19 +283,35 @@ namespace FishPlanner
         private FishingPole fishingPole;
         private Dictionary<Color, List<Bait>> baits;
 
-        public int Gold => gold;
+        public delegate void GoldEvent(int gold);
+        public GoldEvent OnGoldEventChanged;
+        public delegate void FishingPoleEvent(FishingPole pole);
+        public FishingPoleEvent OnPoleEventChanged;
+
+        public int Gold
+        {
+            get { return gold; }
+            set
+            {
+                gold = value;
+                OnGoldEventChanged?.Invoke(gold);
+            }
+        }
 
         public FishingPole FishingPole
         {
             get { return fishingPole; }
-            set { fishingPole = value; }
+            set { 
+                fishingPole = value;
+                OnPoleEventChanged?.Invoke(fishingPole);
+            }
         }
 
         public Dictionary<Color, List<Bait>> Baits => baits;
 
         public Player()
         {
-            gold = 100;
+            Gold = 100;
 
             baits = new Dictionary<Color, List<Bait>>();
             baits.Add(Color.Green, new List<Bait>());
@@ -283,18 +321,18 @@ namespace FishPlanner
 
         public bool UseGold(int price)
         {
-            if(gold - price < 0)
+            if(Gold - price < 0)
             {
                 return false;
             }
 
-            gold -= price;
+            Gold -= price;
             return true;
         }
 
         public void EarnGold(int gold)
         {
-            this.gold += gold;
+            this.Gold += gold;
         }
 
         public bool UseBait(Color color)
@@ -330,6 +368,14 @@ namespace FishPlanner
             for (int i = 0; i < baits.Count; i++)
             {
                 AddBait(baits[i]);
+            }
+        }
+
+        public void ClearBait()
+        {
+            foreach(var bait in baits)
+            {
+                bait.Value.Clear();
             }
         }
     }

@@ -11,9 +11,11 @@ namespace FishPlanner
         [SerializeField] private PoleItem prefab;
         [SerializeField] private Sprite smallPole, mediumPole, bigPole;
         [SerializeField] private Button buyButton;
+        [SerializeField] private Button skipButton;
         [SerializeField] private RectTransform selectionTransform;
 
         private Size selectedPole;
+        private bool selected = false;
 
         // Start is called before the first frame update
         void Start()
@@ -34,16 +36,24 @@ namespace FishPlanner
                     RectTransform rt = (RectTransform)item.transform;
                     selectionTransform.anchoredPosition = rt.anchoredPosition;
                     selectionTransform.gameObject.SetActive(true);
+                    selected = true;
                 };
             }
 
             buyButton.onClick.AddListener(BuyPole);
+            skipButton.onClick.AddListener(SkipDay);
         }
 
         // Update is called once per frame
         void Update()
         {
         
+        }
+
+        public void ResetSelection()
+        {
+            selected = false;
+            selectionTransform.gameObject.SetActive(false);
         }
 
         private void ChangeSelectedPole(Size size)
@@ -53,7 +63,13 @@ namespace FishPlanner
 
         private void BuyPole()
         {
-            gameplayManager.ConfirmPolePurchase(selectedPole);
+            if(selected)
+                gameplayManager.ConfirmPolePurchase(selectedPole);
+        }
+
+        private void SkipDay()
+        {
+            gameplayManager.SkipDay();
         }
 
         private Sprite GetSprite(Size size)

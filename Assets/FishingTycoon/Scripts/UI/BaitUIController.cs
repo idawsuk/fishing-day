@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,8 @@ namespace FishPlanner
         [SerializeField] private GameplayManager gameplayManager;
         [SerializeField] private BaitItem prefab;
         [SerializeField] private Button buyButton;
+        [SerializeField] private TextMeshProUGUI totalPriceDisplay;
+        [SerializeField] private TextMeshProUGUI errorMessage;
         private List<Bait> baitToBuy = new List<Bait>();
         private List<BaitItem> baitItems = new List<BaitItem>();
         private int totalPrice = 0;
@@ -46,6 +49,8 @@ namespace FishPlanner
             {
                 baitItems[i].ResetCount();
             }
+
+            UpdatePriceDisplay();
         }
 
         // Update is called once per frame
@@ -59,6 +64,8 @@ namespace FishPlanner
             Bait bait = gameplayManager.Game.GetBait(color);
             totalPrice += bait.Price;
             baitToBuy.Add(bait);
+
+            UpdatePriceDisplay();
         }
 
         private void OnRemoveBait(Color color)
@@ -66,6 +73,8 @@ namespace FishPlanner
             Bait bait = gameplayManager.Game.GetBait(color);
             totalPrice -= bait.Price;
             baitToBuy.Remove(bait);
+
+            UpdatePriceDisplay();
         }
 
         private Sprite GetSprite(Color color)
@@ -85,7 +94,13 @@ namespace FishPlanner
 
         private void BuyBait()
         {
-            gameplayManager.ConfirmBaitPurchase(baitToBuy);
+            var result = gameplayManager.ConfirmBaitPurchase(baitToBuy);
+            errorMessage.gameObject.SetActive(!result);
+        }
+
+        private void UpdatePriceDisplay()
+        {
+            totalPriceDisplay.text = totalPrice.ToString();
         }
     }
 }
